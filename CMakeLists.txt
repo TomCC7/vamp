@@ -51,6 +51,29 @@ include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 include(CompilerSettings)
 include(FetchInitCPM)
+
+if(SKBUILD)
+  set(_VAMP_CMEEL_PYTHON_EXECUTABLE "${Python_EXECUTABLE}")
+  if(NOT _VAMP_CMEEL_PYTHON_EXECUTABLE)
+    find_package(Python COMPONENTS Interpreter QUIET)
+    set(_VAMP_CMEEL_PYTHON_EXECUTABLE "${Python_EXECUTABLE}")
+  endif()
+
+  if(_VAMP_CMEEL_PYTHON_EXECUTABLE)
+    execute_process(
+      COMMAND "${_VAMP_CMEEL_PYTHON_EXECUTABLE}" -c "import pathlib, sysconfig; print(pathlib.Path(sysconfig.get_path('purelib')) / 'cmeel.prefix')"
+      OUTPUT_VARIABLE _VAMP_CMEEL_PREFIX
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      ERROR_QUIET
+    )
+
+    if(_VAMP_CMEEL_PREFIX AND IS_DIRECTORY "${_VAMP_CMEEL_PREFIX}")
+      list(PREPEND CMAKE_PREFIX_PATH "${_VAMP_CMEEL_PREFIX}")
+      message(STATUS "Prepending cmeel prefix to CMAKE_PREFIX_PATH: ${_VAMP_CMEEL_PREFIX}")
+    endif()
+  endif()
+endif()
+
 include(Dependencies)
 
 # Create VAMP C++ library

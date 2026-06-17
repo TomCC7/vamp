@@ -7,7 +7,14 @@ if(VAMP_BUILD_PYTHON_BINDINGS)
     REQUIRED COMPONENTS Interpreter Development.Module
     OPTIONAL_COMPONENTS Development.SABIModule)
 
-  CPMAddPackage("gh:wjakob/nanobind#9a25aed8a7edfe60ef9ad1c911e57667bc4916c4")
+  if(SKBUILD)
+    find_package(nanobind CONFIG REQUIRED)
+  else()
+    find_package(nanobind CONFIG QUIET)
+    if(NOT nanobind_FOUND)
+      CPMAddPackage("gh:wjakob/nanobind#9a25aed8a7edfe60ef9ad1c911e57667bc4916c4")
+    endif()
+  endif()
 
   # Check if Python is available
   if(NOT Python_FOUND)
@@ -87,11 +94,8 @@ if(VAMP_BUILD_PYTHON_BINDINGS)
     Eigen3::Eigen
   )
 
-  if($ENV{GITHUB_ACTIONS})
-    set(STUB_PREFIX "")
-  else()
-    set(STUB_PREFIX "${CMAKE_BINARY_DIR}/stubs/")
-  endif()
+  set(STUB_DIR "${CMAKE_CURRENT_BINARY_DIR}/stubs/vamp/_core")
+  file(MAKE_DIRECTORY "${STUB_DIR}")
 
   # Disable strict warnings for Python bindings to maintain compatibility
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -101,7 +105,7 @@ if(VAMP_BUILD_PYTHON_BINDINGS)
   nanobind_add_stub(
     vamp_stub
     MODULE _core_ext
-    OUTPUT "${STUB_PREFIX}__init__.pyi"
+    OUTPUT "${STUB_DIR}/__init__.pyi"
     PYTHON_PATH $<TARGET_FILE_DIR:_core_ext>
     DEPENDS _core_ext
     VERBOSE
@@ -111,7 +115,7 @@ if(VAMP_BUILD_PYTHON_BINDINGS)
     nanobind_add_stub(
       "vamp_${robot_name}_stub"
       MODULE "_core_ext.${robot_name}"
-      OUTPUT "${STUB_PREFIX}${robot_name}.pyi"
+      OUTPUT "${STUB_DIR}/${robot_name}.pyi"
       PYTHON_PATH $<TARGET_FILE_DIR:_core_ext>
       DEPENDS _core_ext
       VERBOSE
@@ -125,14 +129,14 @@ if(VAMP_BUILD_PYTHON_BINDINGS)
   )
 
   install(
-    FILES "${STUB_PREFIX}__init__.pyi"
-    DESTINATION "${CMAKE_SOURCE_DIR}/src/vamp/_core"
+    FILES "${STUB_DIR}/__init__.pyi"
+    DESTINATION vamp/_core
   )
 
   foreach(robot_name IN LISTS VAMP_ROBOT_MODULES)
     install(
-      FILES "${STUB_PREFIX}${robot_name}.pyi"
-      DESTINATION "${CMAKE_SOURCE_DIR}/src/vamp/_core"
+      FILES "${STUB_DIR}/${robot_name}.pyi"
+      DESTINATION vamp/_core
     )
   endforeach()
 endif() 
